@@ -1,4 +1,8 @@
 #include "../ev3dev.h"
+#include <chrono>
+#include <thread>
+
+namespace ev3 = ev3dev;
 
 /* 
 from time import sleep
@@ -14,14 +18,35 @@ speaker = Sound() */
 
 int main()
 {
+   ev3::touch_sensor touch_s(ev3::INPUT_2);
    // print("Press the touch sensor to change the LED color!")
-   ev3dev::sound::speak("Press the touch sensor to change the LED color!", true);
+   // ev3::sound::speak("Press the touch sensor to change the LED color!", true);
+   
+   ev3::led::all_off();
+   std::this_thread::sleep_for(std::chrono::milliseconds(500));
    
    while(true)
    {
-      ev3dev::led::set_color(ev3dev::led::left, ev3dev::led::red);
-      ev3dev::led::set_color(ev3dev::led::right, ev3dev::led::green);
-   }
+      if(touch_s.is_pressed())
+      {    		     
+         ev3::led::set_color(ev3::led::left, ev3::led::red);
+         for(auto led : ev3::led::right)
+	 { 
+	    led->off();
+	 }
+      }
+      else
+      {
+         for(auto led : ev3::led::left)
+	 {
+	    led->off();
+	 }
+         ev3::led::set_color(ev3::led::right, ev3::led::green);
+      }
+
+      // don't let this loop use 100% of CPU
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+   } 
 /*
 while True:
     if ts.is_pressed:
