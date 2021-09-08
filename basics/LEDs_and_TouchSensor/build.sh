@@ -13,7 +13,7 @@ fi
 
 # source code compilation
 echo "compiling the ${file_name}.cpp and ev3dev.cpp files..."
-arm-linux-gnueabi-g++ -static ../ev3dev.cpp ${file_name}.cpp -o ${file_name}
+arm-linux-gnueabi-g++ -static ../../ev3dev.cpp ${file_name}.cpp -o ${file_name}
 
 # moving binary file to the brick
 if [[ -e ${current_location}/${file_name} ]]
