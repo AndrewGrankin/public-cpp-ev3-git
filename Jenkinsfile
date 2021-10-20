@@ -1,14 +1,5 @@
-pipeline {
-   
-   agent master
-   
-   stages {
-      
-      stage("Build") {
-         
-         steps {
-            echo "Building..."
-         }         
-      }
+node('master') {
+   stage('build') {
+      echo "Building project..."
    }
 }
