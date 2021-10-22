@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # variables definition 
-file_name="controlling_LEDs_with_touch_sensor"
+file_name="ev3_cpp_robo_arm_help3r_client"
 current_location=`pwd`
 
 # removing the old binary file if it exists
