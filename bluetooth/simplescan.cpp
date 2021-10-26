@@ -40,6 +40,18 @@ int main(int argc, char** argv)
 
     for (i = 0; i < num_rsp; i++)
     {
+        /*
+            typedef struct {
+                uint8_t b[6];
+            } __attribute__((packed)) bdaddr_t;
+            -----------------------------------------
+            "bdaddr_t" - this structure used to specify a Bluetooth device address.
+            -----------------------------------------
+            Two functions to convert between strings and bdaddr_t structures:
+            int str2ba(const char* str, bdaddr_t* ba);
+            int ba2str(const bdaddr_t*, char* str);
+
+        */
         ba2str(&(ii + i)->bdaddr, addr);
         memset(name, 0, sizeof(name));
         if (hci_read_remote_name(socket, &(ii + i)->bdaddr, sizeof(name), name, 0) < 0)
