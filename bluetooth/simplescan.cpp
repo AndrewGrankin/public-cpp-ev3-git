@@ -44,6 +44,11 @@ int main(int argc, char** argv)
 
     query_length = 8;
     max_responses = 255;
+    /*
+        If flags is set to IREQ_CACHE_FLUSH, then the cache of previosuly detected devices is flushed
+        before performing the current inquiry. Otherwise, if flags is set to 0, then the results of 
+        previous inquiries may be returned, even if the devices aren't in rage anymore.
+    */
     flags = IREQ_CACHE_FLUSH;
     /*
         void* malloc(size_t size);
@@ -91,8 +96,24 @@ int main(int argc, char** argv)
             str2ba takes a string in form "XX:XX:XX:XX:XX:XX" where XX is a hex num in 48-bit address, and
             packs it into a 6-byte bdaddr_t. ba2str does exactly the opposite
         */
+        /*
+            typedef struct {
+                bdaddr_t    bdaddr;
+                uint8_t     pscan_rep_mode;
+                uint8_t     pscan_period_mode;
+                uint8_t     pscan_mode;
+                uint8_t     dev_class[3];
+                uint16_t    clock_offset; 
+            } __attribute__((packed)) inquiry_info;
+            -----------------------------------------
+            Only the bdaddr field is of any use. But there may be a use for the dev_class field,
+            which gives information about the type fo device detected (i.e. if it's a printer, phone,
+            desktop computer, etc.) and is described in the Bluetooth Assigned Numbers. The rest of the
+            fields are used for low level communication, and are not useful for most puprposes.
+        */
         ba2str(&(ii + i)->bdaddr, addr);
         memset(name, 0, sizeof(name));
+        
         if (hci_read_remote_name(socket, &(ii + i)->bdaddr, sizeof(name), name, 0) < 0)
         {
             strcpy(name, "[unknown]");
