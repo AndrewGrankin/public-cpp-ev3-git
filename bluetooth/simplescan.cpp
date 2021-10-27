@@ -13,8 +13,8 @@ int main(int argc, char** argv)
     std::cout << "Hello Bluetooth!" << std::endl;
     
     inquiry_info* ii = NULL;
-    int max_rsp, num_rsp;
-    int dev_id, socket, len, flags;
+    int max_responses, num_responses;
+    int device_id, socket, query_length, flags;
     int i;
     char addr[19] = {0};
     char name[248] = {0};
@@ -29,30 +29,52 @@ int main(int argc, char** argv)
         int hci_open_dev(int dev_id);
         -------------------------------------------
         Most Bluetooth operations require the use of an open socket. hci_open_dev is a function that
-        opens a Bluetooth socket with the specified resource number
-    
+        opens a Bluetooth socket with the specified resource number. This socket represents a connection
+        to the microcontroller on the spedified local Bluetooth adapter, and not a connection to a 
+        remote Bluetooth device. Performing low level Bluetooth operations involves sending commands
+        directly ot the microcontroller with this socket.
     */
-
-    dev_id = hci_get_route(NULL); // retrieves the resource number of the first available Bluetooth adapter.
-    socket = hci_open_dev(dev_id);
-    if (dev_id < 0 || socket < 0) 
+    device_id = hci_get_route(NULL); // retrieves the resource number of the first available Bluetooth adapter.
+    socket = hci_open_dev(device_id); // opens a socket with used device_id to the microcontroller of local adapter.
+    if (device_id < 0 || socket < 0) 
     {
         perror("opening socket");
         exit(1);
     }
 
-    len = 8;
-    max_rsp = 255;
+    query_length = 8;
+    max_responses = 255;
     flags = IREQ_CACHE_FLUSH;
-    ii = (inquiry_info*)malloc(max_rsp * sizeof(inquiry_info));
+    /*
+        void* malloc(size_t size);
+        --------------------------------------------------
+        The malloc function allocates a memory block of at least size bytes. The block may be larger than
+        size bytes because of the space that's required for alignment and maintenance information.
+    */
+    ii = (inquiry_info*)malloc(max_responses * sizeof(inquiry_info));
 
-    num_rsp = hci_inquiry(dev_id, len, max_rsp, NULL, &ii, flags);
-    if (num_rsp < 0)
+    /*
+        After choosing the local Bluetooth adapter to use and allocating system resources, the program
+        is ready to scan for nearby Bluetooth devices. hci_inquiry performs a Bluetooth device discovery
+        and returns a list of detected devices and some basic information about them in the variable ii.
+        On error, it returns -1 and sets errno accordingly.
+        --------------------------------------------------
+        int hci_inquiry(int dev_id, int len, int max_rsp, const uint8_t* lap, inquiry_info** ii, long flags);
+        --------------------------------------------------
+        hci_inquiry is one of the few functions that requires the use of a resource number instead of an
+        open socket, so we use the dev_id (device_id) returned by hci_get_route. The inquiry lasts for at 
+        most 1.28 * len (query_length) seconds, and at most max_rsp (max_responses) devices will be returned
+        in the output parameter ii, which must be large enough to accommodate max_rsp (max_responses)
+        results. It suggested using a max_rsp (max_responses) of 255 for a standard 1.28*8=10.24 seconds
+        inquiry. rsp stands for response.
+    */
+    num_responses = hci_inquiry(device_id, query_length, max_responses, NULL, &ii, flags);
+    if (num_responses < 0)
     {
         perror("hci_inquiry");
     }
 
-    for (i = 0; i < num_rsp; i++)
+    for (i = 0; i < num_responses; i++)
     {
         /*
             typedef struct {
