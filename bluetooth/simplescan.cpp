@@ -15,8 +15,7 @@ int main(int argc, char** argv)
     inquiry_info* detected_devices_info = NULL;
     int max_responses, num_responses;
     int local_device_id, socket, query_length, flags;
-    int i;
-    char addr[19] = {0};
+    char detected_device_addr[19] = {0};
     char name[248] = {0};
 
     /*
@@ -73,13 +72,14 @@ int main(int argc, char** argv)
         max_rsp (max_responses) results. It suggested using a max_rsp (max_responses) of 255 for a standard 
         1.28*8=10.24 seconds inquiry. rsp stands for response.
     */
-    num_responses = hci_inquiry(local_device_id, query_length, max_responses, NULL, &detected_devices_info, flags);
+    num_responses = hci_inquiry(local_device_id, query_length, max_responses, NULL, 
+                                &detected_devices_info, flags);
     if (num_responses < 0)
     {
         perror("hci_inquiry");
     }
 
-    for (i = 0; i < num_responses; i++)
+    for (int i = 0; i < num_responses; i++)
     {
         /*
             typedef struct {
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
             Two functions to convert between strings and bdaddr_t structures:
             -----------------------------------------
             int str2ba(const char* str, bdaddr_t* ba);
-            int ba2str(const bdaddr_t*, char* str);
+            int ba2str(const bdaddr_t* ba, char* str);
             -----------------------------------------
             str2ba takes a string in form "XX:XX:XX:XX:XX:XX" where XX is a hex num in 48-bit address, and
             packs it into a 6-byte bdaddr_t. ba2str does exactly the opposite
@@ -106,15 +106,29 @@ int main(int argc, char** argv)
                 uint16_t    clock_offset; 
             } __attribute__((packed)) inquiry_info;
             -----------------------------------------
-            Only the bdaddr field is of any use from the inquiry_info structure. But there may be a use for the dev_class field,
-            which gives information about the type fo device detected (i.e. if it's a printer, phone,
-            desktop computer, etc.) and is described in the Bluetooth Assigned Numbers. The rest of the
-            fields are used for low level communication, and are not useful for most puprposes.
+            Only the bdaddr field is of any use from the inquiry_info structure. But there may be a use 
+            for the dev_class field, which gives information about the type fo device detected (i.e. if it's
+            a printer, phone, desktop computer, etc.) and is described in the Bluetooth Assigned Numbers. The
+            rest of the fields are used for low level communication, and are not useful for most puprposes.
         */
-        ba2str(&(detected_devices_info + i)->bdaddr, addr);
+        ba2str(&(detected_devices_info + i)->bdaddr, detected_device_addr);
         memset(name, 0, sizeof(name));
         
-        if (hci_read_remote_name(socket, &(detected_devices_info + i)->bdaddr, sizeof(name), name, 0) < 0)
+        /*
+            Once a list of nearby Bluetooth devices and their addresses has been found, the program 
+            determines the user-friendly names associated with those addresses and present them to the user. 
+            The hci_read_remote_name function is used for this purpose.
+            ------------------------------------------
+            int hci_read_remote_name(int sock, const bdaddr_t* ba, int len, char* name, int timeout);
+            ------------------------------------------
+            hci_read_remote_name tries for at most timeout milliseconds to use the socket sock to query
+            the user-friendly name of the device with the Bluetooth address ba. On success, the function
+            returns 0 and copies at most the first len bytes of the device's user-friendly name into name.
+            On failure, it returns -1 and sets errno accordingly.  
+        */
+        int remote_name_result = hci_read_remote_name(socket, &(detected_devices_info + i)->bdaddr, 
+                                                      sizeof(name), name, 0);
+        if (remote_name_result < 0)
         {
             strcpy(name, "[unknown]");
         }
