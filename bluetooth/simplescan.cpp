@@ -12,9 +12,9 @@ int main(int argc, char** argv)
 {
     std::cout << "Hello Bluetooth!" << std::endl;
     
-    inquiry_info* ii = NULL;
+    inquiry_info* detected_devices_info = NULL;
     int max_responses, num_responses;
-    int device_id, socket, query_length, flags;
+    int local_device_id, socket, query_length, flags;
     int i;
     char addr[19] = {0};
     char name[248] = {0};
@@ -34,9 +34,9 @@ int main(int argc, char** argv)
         remote Bluetooth device. Performing low level Bluetooth operations involves sending commands
         directly ot the microcontroller with this socket.
     */
-    device_id = hci_get_route(NULL); // retrieves the resource number of the first available Bluetooth adapter.
-    socket = hci_open_dev(device_id); // opens a socket with used device_id to the microcontroller of local adapter.
-    if (device_id < 0 || socket < 0) 
+    local_device_id = hci_get_route(NULL); // retrieves the resource number of the first available local Bluetooth adapter.
+    socket = hci_open_dev(local_device_id); // opens a socket using local_device_id to the microcontroller of that local adapter.
+    if (local_device_id < 0 || socket < 0) 
     {
         perror("opening socket");
         exit(1);
@@ -56,24 +56,24 @@ int main(int argc, char** argv)
         The malloc function allocates a memory block of at least size bytes. The block may be larger than
         size bytes because of the space that's required for alignment and maintenance information.
     */
-    ii = (inquiry_info*)malloc(max_responses * sizeof(inquiry_info));
+    detected_devices_info = (inquiry_info*)malloc(max_responses * sizeof(inquiry_info));
 
     /*
         After choosing the local Bluetooth adapter to use and allocating system resources, the program
         is ready to scan for nearby Bluetooth devices. hci_inquiry performs a Bluetooth device discovery
-        and returns a list of detected devices and some basic information about them in the variable ii.
-        On error, it returns -1 and sets errno accordingly.
+        and returns a list of detected devices and some basic information about them in the variable 
+        detected_devices_info. On error, it returns -1 and sets errno accordingly.
         --------------------------------------------------
         int hci_inquiry(int dev_id, int len, int max_rsp, const uint8_t* lap, inquiry_info** ii, long flags);
         --------------------------------------------------
         hci_inquiry is one of the few functions that requires the use of a resource number instead of an
-        open socket, so we use the dev_id (device_id) returned by hci_get_route. The inquiry lasts for at 
-        most 1.28 * len (query_length) seconds, and at most max_rsp (max_responses) devices will be returned
-        in the output parameter ii, which must be large enough to accommodate max_rsp (max_responses)
-        results. It suggested using a max_rsp (max_responses) of 255 for a standard 1.28*8=10.24 seconds
-        inquiry. rsp stands for response.
+        open socket, so we use the dev_id (local_device_id) returned by hci_get_route. The inquiry lasts for 
+        at most 1.28 * len (query_length) seconds, and at most max_rsp (max_responses) devices will be 
+        returned in the output parameter ii (detected_devices_info), which must be large enough to accommodate
+        max_rsp (max_responses) results. It suggested using a max_rsp (max_responses) of 255 for a standard 
+        1.28*8=10.24 seconds inquiry. rsp stands for response.
     */
-    num_responses = hci_inquiry(device_id, query_length, max_responses, NULL, &ii, flags);
+    num_responses = hci_inquiry(local_device_id, query_length, max_responses, NULL, &detected_devices_info, flags);
     if (num_responses < 0)
     {
         perror("hci_inquiry");
@@ -106,22 +106,22 @@ int main(int argc, char** argv)
                 uint16_t    clock_offset; 
             } __attribute__((packed)) inquiry_info;
             -----------------------------------------
-            Only the bdaddr field is of any use. But there may be a use for the dev_class field,
+            Only the bdaddr field is of any use from the inquiry_info structure. But there may be a use for the dev_class field,
             which gives information about the type fo device detected (i.e. if it's a printer, phone,
             desktop computer, etc.) and is described in the Bluetooth Assigned Numbers. The rest of the
             fields are used for low level communication, and are not useful for most puprposes.
         */
-        ba2str(&(ii + i)->bdaddr, addr);
+        ba2str(&(detected_devices_info + i)->bdaddr, addr);
         memset(name, 0, sizeof(name));
         
-        if (hci_read_remote_name(socket, &(ii + i)->bdaddr, sizeof(name), name, 0) < 0)
+        if (hci_read_remote_name(socket, &(detected_devices_info + i)->bdaddr, sizeof(name), name, 0) < 0)
         {
             strcpy(name, "[unknown]");
         }
         printf("%s %s\n", addr, name);
     }
 
-    free(ii);
+    free(detected_devices_info);
     close(socket);
     return 0;
 }
