@@ -6,6 +6,7 @@ current_location=`pwd`
 
 # removing the old binary file if it exists
 echo "log: removing the old binary file if it exists..."
+echo "checking file: ${current_location}/artifacts/${file_name}"
 if [[ -e ${current_location}/artifacts/${file_name} ]]
 then
    rm ${current_location}/artifacts/${file_name}

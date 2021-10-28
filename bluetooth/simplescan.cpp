@@ -132,7 +132,7 @@ int main(int argc, char** argv)
         {
             strcpy(name, "[unknown]");
         }
-        printf("%s %s\n", addr, name);
+        printf("%s %s\n", detected_device_addr, name);
     }
 
     free(detected_devices_info);
