@@ -15,4 +15,4 @@ fi
 
 # source code compilation
 echo "log: compiling the ${file_name}.cpp ..."
-g++ ../bluetooth/${file_name}.cpp -o artifacts/${file_name} -lbluetooth
+g++ -g ../bluetooth/${file_name}.cpp -o artifacts/${file_name} -lbluetooth
